@@ -2,12 +2,19 @@ package clearsolutions.com.javatestassignment.service.impl;
 
 import clearsolutions.com.javatestassignment.model.User;
 import clearsolutions.com.javatestassignment.repository.UserRepository;
+import clearsolutions.com.javatestassignment.source.PropertySourceResolver;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.stereotype.Component;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -18,18 +25,24 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@TestPropertySource("classpath:application.properties")
+@SpringBootTest
 class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
 
-    @InjectMocks
+    @Autowired
+    private PropertySourceResolver propertyClass;
+
     private UserServiceImpl userService;
 
     private User user1;
 
     @BeforeEach
     void setUp() {
+        userService = new UserServiceImpl(userRepository, propertyClass);
+
         user1 = User.builder().email("test1@example.com").firstName("Magnus").lastName("Carlsen")
                 .birthDate(LocalDate.of(1990, 1, 1)).address("Kharkiv")
                 .build();
@@ -61,12 +74,23 @@ class UserServiceImplTest {
 
     @Test
     void save() {
+        PropertySourceResolver propertyClass = new PropertySourceResolver();
         when(userRepository.save(any())).thenReturn(user1);
 
         User savedUser = userService.save(user1);
 
         assertEquals("Magnus", savedUser.getFirstName());
         verify(userRepository, times(1)).save(any());
+    }
+
+    @Test
+    void saveWithBirthDateLessThan18() {
+        PropertySourceResolver propertyClass = new PropertySourceResolver();
+        user1.setBirthDate(LocalDate.of(2020, 1, 1));
+
+        assertThrows(ConstraintViolationException.class, () -> {
+            userService.save(user1);
+        });
     }
 
     @Test
