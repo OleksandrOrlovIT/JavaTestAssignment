@@ -35,7 +35,7 @@ public class UserServiceImpl implements UserService {
     public User findById(Long id) {
         User user = userRepository.findById(id).orElse(null);
         if(user != null)
-            return userRepository.findById(id).orElse(null);
+            return user;
         else
             throw new ResourceNotFoundException("User doesn't exist with id: " + id);
     }

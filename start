@@ -1,0 +1,10 @@
+[33med01b67[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to HEAD^
+[33meeae670[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{1}: commit: Created BootStrap class to load some Users at the start. Created Exception Controller to provide better exception handling. Created custom Error Response for Exception controller. In UserController created get, post, put, patch, delete mappings. Added findAllUsersInRange() for UserService to find all users in some LocalDate range
+[33med01b67[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m HEAD@{2}: commit: Created PropertySourceResolver that takes 18 from application.properties. Added check for 18 years in serviceImplemantation. Tested this behavior.
+[33m942dbb5[m HEAD@{3}: commit: Wrote test for UserService
+[33m26f7a95[m HEAD@{4}: commit: Change birthDate to LocalDate and fixed validation annotations. Created Repository for User. Tested User.class validation. Created UserService and UserServiceImplementation. Created UserController with post method.
+[33ma07395d[m HEAD@{5}: commit: Created User.class in model
+[33mce36c95[m HEAD@{6}: rebase (finish): returning to refs/heads/main
+[33mce36c95[m HEAD@{7}: rebase (pick): Initial commit
+[33ma35710c[m HEAD@{8}: rebase (start): checkout origin/main
+[33mcef4a3b[m HEAD@{9}: commit (initial): Initial commit
