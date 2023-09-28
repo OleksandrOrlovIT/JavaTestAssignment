@@ -2,6 +2,7 @@ package clearsolutions.com.javatestassignment.service;
 
 import clearsolutions.com.javatestassignment.model.User;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface UserService {
@@ -14,4 +15,6 @@ public interface UserService {
     void delete(User user);
 
     void deleteById(Long id);
+
+    List<User> findAllUsersInRange(LocalDate from, LocalDate to);
 }
