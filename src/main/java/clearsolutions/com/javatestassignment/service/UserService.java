@@ -16,5 +16,6 @@ public interface UserService {
 
     void deleteById(Long id);
 
+    User updateUserPartially(Long searchUserId, User newUser);
     List<User> findAllUsersInRange(LocalDate from, LocalDate to);
 }

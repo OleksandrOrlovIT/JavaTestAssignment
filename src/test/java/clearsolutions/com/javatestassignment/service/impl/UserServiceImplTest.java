@@ -1,5 +1,6 @@
 package clearsolutions.com.javatestassignment.service.impl;
 
+import clearsolutions.com.javatestassignment.exception.ResourceNotFoundException;
 import clearsolutions.com.javatestassignment.model.User;
 import clearsolutions.com.javatestassignment.repository.UserRepository;
 import clearsolutions.com.javatestassignment.source.PropertySourceResolver;
@@ -7,13 +8,10 @@ import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.stereotype.Component;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
@@ -21,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -73,8 +72,16 @@ class UserServiceImplTest {
     }
 
     @Test
+    void findByIdWithoutId(){
+        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            userService.findById(1L);
+        });
+    }
+
+    @Test
     void save() {
-        PropertySourceResolver propertyClass = new PropertySourceResolver();
         when(userRepository.save(any())).thenReturn(user1);
 
         User savedUser = userService.save(user1);
@@ -85,8 +92,16 @@ class UserServiceImplTest {
 
     @Test
     void saveWithBirthDateLessThan18() {
-        PropertySourceResolver propertyClass = new PropertySourceResolver();
         user1.setBirthDate(LocalDate.of(2020, 1, 1));
+
+        assertThrows(ConstraintViolationException.class, () -> {
+            userService.save(user1);
+        });
+    }
+
+    @Test
+    void saveWithoutBirthDate() {
+        user1.setBirthDate(null);
 
         assertThrows(ConstraintViolationException.class, () -> {
             userService.save(user1);
@@ -105,5 +120,90 @@ class UserServiceImplTest {
         userService.deleteById(user1.getId());
 
         verify(userRepository, times(1)).deleteById(any());
+    }
+
+    @Test
+    void updateUserPartiallyWithAllFields() {
+        User foundUser = User.builder().email("test2@example.com").firstName("Johnny").lastName("Silverhand")
+                .birthDate(LocalDate.of(1950, 1, 1)).address("Night City")
+                .build();
+
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(foundUser));
+
+        foundUser = userService.updateUserPartially(1L, user1);
+
+        assertNotNull(foundUser);
+        assertThat(foundUser.getEmail()).isEqualTo(user1.getEmail());
+        assertThat(foundUser.getFirstName()).isEqualTo(user1.getFirstName());
+        assertThat(foundUser.getLastName()).isEqualTo(user1.getLastName());
+        assertThat(foundUser.getBirthDate()).isEqualTo(user1.getBirthDate());
+        assertThat(foundUser.getAddress()).isEqualTo(user1.getAddress());
+        assertThat(foundUser.getPhoneNumber()).isEqualTo(user1.getPhoneNumber());
+    }
+
+    @Test
+    void updateUserPartiallyWithSeveralFields() {
+        User foundUser = User.builder().email("test2@example.com").firstName("Johnny").lastName("Silverhand")
+                .birthDate(LocalDate.of(1950, 1, 1)).address("Night City")
+                .build();
+
+        user1.setBirthDate(null);
+        user1.setAddress(null);
+        user1.setLastName(null);
+
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(foundUser));
+
+        foundUser = userService.updateUserPartially(1L, user1);
+
+        assertNotNull(foundUser);
+        assertThat(foundUser.getEmail()).isEqualTo(user1.getEmail());
+        assertThat(foundUser.getFirstName()).isEqualTo(user1.getFirstName());
+        assertThat(foundUser.getLastName()).isEqualTo("Silverhand");
+        assertThat(foundUser.getBirthDate()).isEqualTo(LocalDate.of(1950, 1, 1));
+        assertThat(foundUser.getAddress()).isEqualTo("Night City");
+        assertThat(foundUser.getPhoneNumber()).isEqualTo(user1.getPhoneNumber());
+    }
+
+    @Test
+    void updateUserPartiallyWithOneDifferentField() {
+        User foundUser = User.builder().email("test2@example.com").firstName("Johnny").lastName("Silverhand")
+                .birthDate(LocalDate.of(1950, 1, 1)).address("Night City")
+                .build();
+
+        User user2 = User.builder().email("user2@gmail.com").build();
+
+
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(foundUser));
+
+        foundUser = userService.updateUserPartially(1L, user2);
+
+        assertNotNull(foundUser);
+        assertThat(foundUser.getEmail()).isEqualTo(user2.getEmail());
+        assertThat(foundUser.getFirstName()).isEqualTo("Johnny");
+        assertThat(foundUser.getLastName()).isEqualTo("Silverhand");
+        assertThat(foundUser.getBirthDate()).isEqualTo(LocalDate.of(1950, 1, 1));
+        assertThat(foundUser.getAddress()).isEqualTo("Night City");
+        assertThat(foundUser.getPhoneNumber()).isEqualTo(null);
+    }
+
+    @Test
+    void findAllUsersInRange() {
+        User user2 = User.builder().birthDate(LocalDate.of(3000, 1, 1)).build();
+        User user3 = User.builder().birthDate(LocalDate.of(2000, 1, 1)).build();
+
+        when(userService.findAll()).thenReturn(Arrays.asList(user1, user2, user3));
+
+        LocalDate fromDate = LocalDate.of(1980, 1, 1);
+        LocalDate toDate = LocalDate.of(2000, 12, 31);
+
+        assertEquals(2, userService.findAllUsersInRange(fromDate, toDate).size());
+    }
+
+    @Test
+    void findAllUsersInRangeFromLessThanTo() {
+        LocalDate fromDate = LocalDate.of(3000, 1, 1);
+        LocalDate toDate = LocalDate.of(2000, 12, 31);
+
+        assertThrows(IllegalArgumentException.class, () -> userService.findAllUsersInRange(fromDate, toDate));
     }
 }
